@@ -65,29 +65,29 @@ A production-ready, self-hosted **AI analytics admin dashboard** built with Flas
 The project follows a **clean, modular, service-oriented architecture** so the codebase stays easy to test, extend, and reason about:
 
 ```
-┌─────────────────────┐
+┌──────────────────────┐
 │   templates/*.html   │  Presentation layer (Jinja2 + vanilla JS + Chart.js)
 └──────────┬───────────┘
            │
 ┌──────────▼───────────┐
-│       app.py          │  HTTP layer — Flask routes only (thin controllers)
+│       app.py         │  HTTP layer - Flask routes only (thin controllers)
 └──────────┬───────────┘
            │
-   ┌───────┼────────────────┐
-   │       │                │
-┌──▼───┐ ┌─▼────────────┐ ┌─▼───────────────┐
+   ┌───────┼──────────────────┐
+   │       │                  │
+┌──▼────┐ ┌▼──────────────┐ ┌─▼───────────────┐
 │ai_    │ │dashboard_     │ │analytics.py     │  Domain / service layer
 │service│ │service.py     │ │                 │  (business logic, no Flask
 │.py    │ │(prompts,      │ │(usage tracking, │   imports)
 │(OpenAI│ │ notifications,│ │ aggregation,    │
-│wrapper│ │ settings)      │ │ cost estimation)│
+│wrapper│ │ settings)     │ │ cost estimation)│
 └──┬────┘ └───────┬───────┘ └────────┬────────┘
    │              │                  │
    │      ┌───────▼──────────────────▼───────┐
-   │      │        data/*.json (JSON store)    │
-   │      └────────────────────────────────────┘
+   │      │        data/*.json (JSON store)  │
+   │      └──────────────────────────────────┘
    │
-┌──▼─────────────┐
+┌──▼──────────────┐
 │  OpenAI         │
 │  Responses API  │
 └─────────────────┘
@@ -95,14 +95,14 @@ The project follows a **clean, modular, service-oriented architecture** so the c
 
 Design principles applied throughout:
 
-- **Separation of concerns** — `app.py` only parses requests and serializes responses; all business logic lives in `ai_service.py`, `dashboard_service.py`, and `analytics.py`.
-- **Single responsibility per module** — `config.py` owns configuration, `analytics.py` owns usage tracking/statistics, `ai_service.py` owns all OpenAI communication, `dashboard_service.py` owns prompts/notifications/settings persistence.
-- **Type hints everywhere** — function signatures and dataclasses use Python 3.12 type hints for editor autocompletion and static analysis.
-- **PEP 8** — consistent naming, docstrings, and formatting.
-- **Structured logging** — every module logs through the standard `logging` module; the Flask app configures a shared formatter.
-- **Environment-driven configuration** — no secrets or environment-specific values are hardcoded; everything flows through `config.py` and `.env`.
-- **No external database required** — a lightweight, thread-safe JSON file store (`JsonRepository` / `JsonEventStore`) keeps local setup to zero-config while still being swappable for a real database in production.
-- **Graceful degradation** — if `OPENAI_API_KEY` is not configured, the dashboard still runs; AI-dependent UI is disabled with a clear on-screen notice instead of crashing.
+- **Separation of concerns** - `app.py` only parses requests and serializes responses; all business logic lives in `ai_service.py`, `dashboard_service.py`, and `analytics.py`.
+- **Single responsibility per module** - `config.py` owns configuration, `analytics.py` owns usage tracking/statistics, `ai_service.py` owns all OpenAI communication, `dashboard_service.py` owns prompts/notifications/settings persistence.
+- **Type hints everywhere** - function signatures and dataclasses use Python 3.12 type hints for editor autocompletion and static analysis.
+- **PEP 8** - consistent naming, docstrings, and formatting.
+- **Structured logging** - every module logs through the standard `logging` module; the Flask app configures a shared formatter.
+- **Environment-driven configuration** - no secrets or environment-specific values are hardcoded; everything flows through `config.py` and `.env`.
+- **No external database required** - a lightweight, thread-safe JSON file store (`JsonRepository` / `JsonEventStore`) keeps local setup to zero-config while still being swappable for a real database in production.
+- **Graceful degradation** - if `OPENAI_API_KEY` is not configured, the dashboard still runs; AI-dependent UI is disabled with a clear on-screen notice instead of crashing.
 
 ---
 
@@ -110,42 +110,42 @@ Design principles applied throughout:
 
 ```
 ai-dashboard/
-├── README.md                  # This file
-├── LICENSE                    # MIT license
+├── README.md # This file
+├── LICENSE # MIT license
 ├── .gitignore
-├── requirements.txt           # Python dependencies
-├── .env.example                # Environment variable template
-├── app.py                     # Flask app & routes (controllers)
-├── config.py                  # Centralized configuration + model pricing table
-├── dashboard_service.py       # Prompts, notifications, settings persistence
-├── ai_service.py              # OpenAI Responses API wrapper (chat/playground/streaming)
-├── analytics.py               # Usage tracking & aggregate statistics engine
-├── data/                      # JSON-backed local storage (auto-created, gitignored)
+├── requirements.txt # Python dependencies
+├── .env.example # Environment variable template
+├── app.py # Flask app & routes (controllers)
+├── config.py # Centralized configuration + model pricing table
+├── dashboard_service.py # Prompts, notifications, settings persistence
+├── ai_service.py # OpenAI Responses API wrapper (chat/playground/streaming)
+├── analytics.py # Usage tracking & aggregate statistics engine
+├── data/ # JSON-backed local storage (auto-created, gitignored)
 ├── templates/
-│   ├── base.html              # Shared layout: sidebar, topbar, chat widget
-│   ├── dashboard.html         # Overview page (stat cards, charts, timeline)
-│   ├── settings.html          # Profile, appearance, AI defaults
-│   └── chat.html              # AI Chat & Prompt Playground
+│   ├── base.html # Shared layout: sidebar, topbar, chat widget
+│   ├── dashboard.html # Overview page (stat cards, charts, timeline)
+│   ├── settings.html # Profile, appearance, AI defaults
+│   └── chat.html # AI Chat & Prompt Playground
 └── static/
     ├── css/
-    │   ├── style.css          # Design tokens, layout, shared components
-    │   └── dashboard.css      # Page-specific styles (cards, charts, playground)
+    │   ├── style.css # Design tokens, layout, shared components
+    │   └── dashboard.css # Page-specific styles (cards, charts, playground)
     ├── js/
-    │   ├── dashboard.js       # Page logic (dashboard/settings/chat pages)
-    │   ├── charts.js          # Chart.js configuration & data loaders
-    │   ├── chat.js             # Floating AI chat widget
-    │   └── theme.js            # Theme toggle, sidebar, notifications dropdown
-    └── images/                 # Static image assets
+    │   ├── dashboard.js # Page logic (dashboard/settings/chat pages)
+    │   ├── charts.js # Chart.js configuration & data loaders
+    │   ├── chat.js # Floating AI chat widget
+    │   └── theme.js # Theme toggle, sidebar, notifications dropdown
+    └── images/# Static image assets
 ```
 
 ---
 
 ## Prerequisites
 
-- **Python 3.12+** — [Download Python](https://www.python.org/downloads/)
-- **Visual Studio Code** — [Download VS Code](https://code.visualstudio.com/)
-- **VS Code Python extension** (`ms-python.python`) — install from the Extensions marketplace
-- An **OpenAI API key** — [Get one here](https://platform.openai.com/api-keys) (optional for browsing the dashboard UI, required for AI features)
+- **Python 3.12+** - [Download Python](https://www.python.org/downloads/)
+- **Visual Studio Code** - [Download VS Code](https://code.visualstudio.com/)
+- **VS Code Python extension** (`ms-python.python`) - install from the Extensions marketplace
+- An **OpenAI API key** - [Get one here](https://platform.openai.com/api-keys) (optional for browsing the dashboard UI, required for AI features)
 
 Verify your Python installation:
 
@@ -194,7 +194,7 @@ python3 --version
      venv\Scripts\activate.bat
      ```
 
-   When active, `(venv)` appears at the start of your terminal prompt. In VS Code, open the Command Palette (`Ctrl/Cmd+Shift+P`) → **Python: Select Interpreter** → choose the `venv` interpreter so IntelliSense and debugging use the right environment.
+   When active, `(venv)` appears at the start of your terminal prompt. In VS Code, open the Command Palette (`Ctrl/Cmd+Shift+P`) -> **Python: Select Interpreter** -> choose the `venv` interpreter so IntelliSense and debugging use the right environment.
 
 5. **Install dependencies**
 
@@ -215,7 +215,7 @@ python3 --version
    OPENAI_API_KEY=sk-...your-real-key...
    ```
 
-   The dashboard runs without a key — AI features are simply disabled with an on-screen notice until one is added.
+   The dashboard runs without a key - AI features are simply disabled with an on-screen notice until one is added.
 
 7. *(Optional)* **Recommended VS Code extensions**
    - Python (`ms-python.python`)
@@ -292,17 +292,17 @@ Every page shares a **sidebar** (navigation + live monthly-spend widget), a **to
 
 ### Prompt Playground
 Single-shot prompt testing separate from multi-turn chat. Supports:
-- **Model selection** — choose from any model in the pricing table (`config.py`)
-- **Temperature control** — 0.0–2.0 slider, shared with the Chat tab
-- **System prompt editor** — persisted per-session, seeded from your Settings default
-- **Structured JSON output** — toggle "Request structured JSON output" to force `response_format: json_object`
-- **Output viewer** — switch between **Markdown** (rendered via marked.js), **JSON** (pretty-printed), and **Raw** text
+- **Model selection** - choose from any model in the pricing table (`config.py`)
+- **Temperature control** - 0.0–2.0 slider, shared with the Chat tab
+- **System prompt editor** - persisted per-session, seeded from your Settings default
+- **Structured JSON output** - toggle "Request structured JSON output" to force `response_format: json_object`
+- **Output viewer** - switch between **Markdown** (rendered via marked.js), **JSON** (pretty-printed), and **Raw** text
 
 ### Prompt library
-- **Saved prompts** — save the current playground prompt with a title and category
-- **Favorite prompts** — star icon toggles favorite status; filter the list to favorites only
-- **Prompt templates** — three example templates are seeded on first run (bug triage, changelog writer, SQL explainer)
-- **Prompt history** — the last 12 playground runs in the current browser session are listed with token/time stats; click one to reload it
+- **Saved prompts** - save the current playground prompt with a title and category
+- **Favorite prompts** - star icon toggles favorite status; filter the list to favorites only
+- **Prompt templates** - three example templates are seeded on first run (bug triage, changelog writer, SQL explainer)
+- **Prompt history** - the last 12 playground runs in the current browser session are listed with token/time stats; click one to reload it
 
 ### Streaming responses
 The Chat tab streams tokens as they're generated using **Server-Sent Events** over `POST /api/ai/chat/stream`, parsed client-side with the Fetch API's `ReadableStream`. Toggle "Stream responses" off to use the plain `POST /api/ai/chat` endpoint instead.
@@ -328,7 +328,7 @@ All variables live in `.env` (see `.env.example` for the full template with comm
 | `OPENAI_DEFAULT_MODEL` | `gpt-4o-mini` | Default model for new chats/playground runs |
 | `OPENAI_DEFAULT_TEMPERATURE` | `0.7` | Default sampling temperature |
 | `OPENAI_SYSTEM_PROMPT` | *(assistant persona)* | Default system prompt |
-| `SECRET_KEY` | `dev-secret-key` | Flask session secret — **change in production** |
+| `SECRET_KEY` | `dev-secret-key` | Flask session secret - **change in production** |
 | `FLASK_DEBUG` | `True` | Enables debug mode / auto-reload |
 | `HOST` | `127.0.0.1` | Dev server bind address |
 | `PORT` | `5000` | Dev server port |
@@ -391,7 +391,7 @@ Your virtual environment isn't activated, or dependencies weren't installed. Run
 `OPENAI_API_KEY` is missing or still set to the placeholder in `.env`. Add a real key and restart the server (`Ctrl+C` then `python app.py`).
 
 **Charts don't render / console shows a Chart.js error**
-Ensure you have an internet connection — Chart.js and marked.js are loaded from a CDN (`cdnjs.cloudflare.com`). To self-host them, download the files into `static/js/vendor/` and update the `<script>` tags in `templates/dashboard.html` and `templates/chat.html`.
+Ensure you have an internet connection - Chart.js and marked.js are loaded from a CDN (`cdnjs.cloudflare.com`). To self-host them, download the files into `static/js/vendor/` and update the `<script>` tags in `templates/dashboard.html` and `templates/chat.html`.
 
 **Port already in use**
 Another process is bound to port 5000 (common on macOS with AirPlay Receiver). Set a different port: `PORT=5050 python app.py`, or disable AirPlay Receiver in System Settings.
@@ -403,7 +403,7 @@ Some reverse proxies buffer streamed responses. The app already sends `X-Accel-B
 `.env` is only read at process startup (`config.py` loads it once). Restart the Flask server after editing `.env`.
 
 **Data resets unexpectedly**
-Local state (prompts, notifications, settings, analytics events) lives in `data/*.json`. This folder is gitignored by default — back it up or point `DATA_DIR` at a persistent volume in production.
+Local state (prompts, notifications, settings, analytics events) lives in `data/*.json`. This folder is gitignored by default - back it up or point `DATA_DIR` at a persistent volume in production.
 
 ---
 
@@ -431,7 +431,7 @@ This is a standard Flask application and can be deployed anywhere Python runs. A
    waitress-serve --listen=0.0.0.0:8000 app:app
    ```
 
-3. **Persist `data/`** — mount it as a volume (Docker) or point `DATA_DIR` at a managed disk; otherwise prompts/analytics reset on redeploy. For serious production use, swap `JsonRepository`/`JsonEventStore` in `dashboard_service.py` / `analytics.py` for a real database (PostgreSQL, SQLite, etc.) — the rest of the app is unaffected since all access goes through those two classes.
+3. **Persist `data/`** - mount it as a volume (Docker) or point `DATA_DIR` at a managed disk; otherwise prompts/analytics reset on redeploy. For serious production use, swap `JsonRepository`/`JsonEventStore` in `dashboard_service.py` / `analytics.py` for a real database (PostgreSQL, SQLite, etc.) - the rest of the app is unaffected since all access goes through those two classes.
 
 4. **Put it behind a reverse proxy** (Nginx, Caddy) for TLS termination, and disable response buffering on the `/api/ai/chat/stream` route so streaming works end-to-end.
 
