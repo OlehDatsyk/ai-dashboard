@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}AI Chat &amp; Playground · {{ app_name }}{% endblock %}
+{% block chat_widget %}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">AI workspace</p>
+    <h1>Chat &amp; Prompt Playground</h1>
+    <p class="page-subtitle">Converse with the assistant, experiment with prompts, and inspect structured output.</p>
+  </div>
+  <div class="page-header-actions">
+    <div class="tab-switch" role="tablist" aria-label="Mode">
+      <button class="tab-btn active" data-tab="chat" role="tab" aria-selected="true">Chat</button>
+      <button class="tab-btn" data-tab="playground" role="tab" aria-selected="false">Prompt Playground</button>
+    </div>
+  </div>
+</div>
+
+{% if not ai_configured %}
+<div class="alert alert-warning">
+  <strong>AI features are disabled.</strong>&nbsp;Add a valid <code>OPENAI_API_KEY</code> to your <code>.env</code> file and restart the server.
+</div>
+{% endif %}
+
+<div class="playground-layout">
+
+  <!-- ============================= LEFT: PROMPT LIBRARY ============================= -->
+  <aside class="panel prompt-library">
+    <div class="panel-header">
+      <div>
+        <h2>Prompt library</h2>
+        <p class="panel-subtitle">Saved, favorite &amp; template prompts</p>
+      </div>
+    </div>
+
+    <div class="library-filters">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="favorite">Favorites</button>
+    </div>
+
+    <ul class="prompt-list" id="promptList">
+      {% for p in prompts %}
+      <li class="prompt-list-item" data-id="{{ p.id }}" data-favorite="{{ p.favorite|lower }}">
+        <button class="prompt-list-main" data-action="use-prompt">
+          <span class="prompt-title">{{ p.title }}</span>
+          <span class="prompt-category">{{ p.category }}</span>
+        </button>
+        <button class="icon-btn fav-btn {{ 'active' if p.favorite else '' }}" data-action="toggle-favorite" aria-label="Toggle favorite">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3l2.6 5.9 6.4.6-4.8 4.3 1.4 6.3L12 16.9 6.4 20.1l1.4-6.3-4.8-4.3 6.4-.6L12 3Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </button>
+      </li>
+      {% else %}
+      <li class="prompt-empty">No saved prompts yet.</li>
+      {% endfor %}
+    </ul>
+
+    <form id="savePromptForm" class="form-stack save-prompt-form">
+      <label class="field">
+        <span>Save current prompt</span>
+        <input type="text" id="newPromptTitle" placeholder="Prompt title" required />
+      </label>
+      <label class="field">
+        <span>Category</span>
+        <select id="newPromptCategory">
+          <option value="general">General</option>
+          <option value="engineering">Engineering</option>
+          <option value="product">Product</option>
+          <option value="marketing">Marketing</option>
+          <option value="support">Support</option>
+        </select>
+      </label>
+      <button type="submit" class="btn btn-secondary btn-block">Save to library</button>
+    </form>
+  </aside>
+
+  <!-- ============================= CENTER: CHAT / PLAYGROUND ============================= -->
+  <section class="panel playground-main">
+
+    <div class="tab-panel" data-tab-panel="chat">
+      <div class="conversation" id="conversation">
+        <div class="chat-msg chat-msg-assistant">
+          <p>Hello! Ask a question, or switch to Prompt Playground for single-shot experiments with structured output.</p>
+        </div>
+      </div>
+      <form class="composer" id="chatForm">
+        <textarea id="chatInput" placeholder="Message the assistant…" rows="2" {{ 'disabled' if not ai_configured else '' }}></textarea>
+        <button type="submit" class="btn btn-primary" {{ 'disabled' if not ai_configured else '' }}>Send</button>
+      </form>
+    </div>
+
+    <div class="tab-panel hidden" data-tab-panel="playground">
+      <div class="field">
+        <span>Prompt</span>
+        <textarea id="playgroundInput" rows="8" placeholder="Write or paste a prompt to test…" {{ 'disabled' if not ai_configured else '' }}></textarea>
+      </div>
+      <div class="playground-actions">
+        <label class="checkbox-field">
+          <input type="checkbox" id="jsonModeToggle" />
+          <span>Request structured JSON output</span>
+        </label>
+        <button type="button" class="btn btn-primary" id="runPlaygroundBtn" {{ 'disabled' if not ai_configured else '' }}>Run prompt</button>
+      </div>
+
+      <div class="output-viewer">
+        <div class="output-tabs">
+          <button class="chip active" data-output-view="rendered">Markdown</button>
+          <button class="chip" data-output-view="json">JSON</button>
+          <button class="chip" data-output-view="raw">Raw</button>
+        </div>
+        <div class="output-pane" id="outputRendered"><p class="output-placeholder">Output will appear here.</p></div>
+        <pre class="output-pane hidden" id="outputJson"></pre>
+        <pre class="output-pane hidden" id="outputRaw"></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================= RIGHT: SETTINGS + HISTORY ============================= -->
+  <aside class="panel playground-settings">
+    <div class="panel-header">
+      <div>
+        <h2>Run settings</h2>
+        <p class="panel-subtitle">Applies to chat &amp; playground</p>
+      </div>
+    </div>
+
+    <div class="form-stack">
+      <label class="field">
+        <span>Model</span>
+        <select id="modelSelect">
+          {% for m in available_models %}
+          <option value="{{ m }}" {{ 'selected' if settings.default_model == m else '' }}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="field">
+        <span>Temperature <output id="playgroundTempOutput">{{ settings.default_temperature }}</output></span>
+        <input type="range" id="temperatureSlider" min="0" max="2" step="0.1" value="{{ settings.default_temperature }}" />
+      </label>
+
+      <label class="checkbox-field">
+        <input type="checkbox" id="streamToggle" checked />
+        <span>Stream responses</span>
+      </label>
+
+      <label class="field">
+        <span>System prompt</span>
+        <textarea id="systemPromptEditor" rows="6">{{ settings.system_prompt }}</textarea>
+      </label>
+    </div>
+
+    <div class="panel-header panel-header-tight">
+      <div>
+        <h2>Conversation stats</h2>
+      </div>
+    </div>
+    <ul class="stat-mini-list" id="runStats">
+      <li><span>Prompt tokens</span><strong id="statPromptTokens">0</strong></li>
+      <li><span>Completion tokens</span><strong id="statCompletionTokens">0</strong></li>
+      <li><span>Response time</span><strong id="statResponseTime">0 ms</strong></li>
+      <li><span>Est. cost</span><strong id="statCost">{{ currency_symbol }}0.00000</strong></li>
+    </ul>
+
+    <div class="panel-header panel-header-tight">
+      <div>
+        <h2>Prompt history</h2>
+      </div>
+    </div>
+    <ul class="history-list" id="promptHistory">
+      <li class="history-empty">No requests yet this session.</li>
+    </ul>
+  </aside>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}" data-page="chat"></script>
+{% endblock %}

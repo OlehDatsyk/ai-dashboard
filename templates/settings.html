@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Settings · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Account</p>
+    <h1>Settings</h1>
+    <p class="page-subtitle">Manage your profile, appearance, and AI defaults.</p>
+  </div>
+</div>
+
+<div class="settings-grid">
+
+  <!-- ============================= PROFILE ============================= -->
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Profile</h2>
+        <p class="panel-subtitle">Shown across the dashboard</p>
+      </div>
+    </div>
+    <form id="profileForm" class="form-stack">
+      <label class="field">
+        <span>Display name</span>
+        <input type="text" name="display_name" value="{{ settings.display_name }}" required />
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input type="email" name="email" value="{{ settings.email }}" required />
+      </label>
+      <label class="field">
+        <span>Role</span>
+        <input type="text" name="role" value="{{ settings.role }}" />
+      </label>
+      <button type="submit" class="btn btn-primary">Save profile</button>
+    </form>
+  </section>
+
+  <!-- ============================= APPEARANCE ============================= -->
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Appearance</h2>
+        <p class="panel-subtitle">Choose how the dashboard looks</p>
+      </div>
+    </div>
+    <div class="theme-picker">
+      <button type="button" class="theme-option {{ 'active' if settings.theme == 'light' else '' }}" data-theme-choice="light">
+        <span class="theme-swatch theme-swatch-light"></span>
+        Light mode
+      </button>
+      <button type="button" class="theme-option {{ 'active' if settings.theme == 'dark' else '' }}" data-theme-choice="dark">
+        <span class="theme-swatch theme-swatch-dark"></span>
+        Dark mode
+      </button>
+    </div>
+  </section>
+
+  <!-- ============================= AI DEFAULTS ============================= -->
+  <section class="panel panel-large">
+    <div class="panel-header">
+      <div>
+        <h2>AI defaults</h2>
+        <p class="panel-subtitle">Applied to new chats and playground runs</p>
+      </div>
+    </div>
+    <form id="aiSettingsForm" class="form-stack">
+      <div class="form-row">
+        <label class="field">
+          <span>Default model</span>
+          <select name="default_model">
+            {% for m in available_models %}
+            <option value="{{ m }}" {{ 'selected' if settings.default_model == m else '' }}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span>Default temperature <output id="tempOutput">{{ settings.default_temperature }}</output></span>
+          <input type="range" name="default_temperature" min="0" max="2" step="0.1" value="{{ settings.default_temperature }}" id="tempSlider" />
+        </label>
+      </div>
+      <label class="field">
+        <span>System prompt</span>
+        <textarea name="system_prompt" rows="5">{{ settings.system_prompt }}</textarea>
+        <small class="field-hint">Sets the assistant's default behavior for every new conversation.</small>
+      </label>
+      <button type="submit" class="btn btn-primary">Save AI defaults</button>
+    </form>
+  </section>
+
+  <!-- ============================= API KEY STATUS ============================= -->
+  <section class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>OpenAI API connection</h2>
+        <p class="panel-subtitle">Configured via environment variables</p>
+      </div>
+    </div>
+    <div class="key-status {{ 'key-status-ok' if ai_configured else 'key-status-warn' }}">
+      <span class="status-pulse"></span>
+      <div>
+        <strong>{{ 'Connected' if ai_configured else 'Not connected' }}</strong>
+        <p>
+          {% if ai_configured %}
+            Your server is authenticated with the OpenAI API. Requests are billed to the account tied to your API key.
+          {% else %}
+            No API key detected. Add <code>OPENAI_API_KEY</code> to your <code>.env</code> file, then restart the Flask server.
+          {% endif %}
+        </p>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}" data-page="settings"></script>
+{% endblock %}

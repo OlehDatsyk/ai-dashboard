@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Overview · {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <p class="eyebrow">Workspace overview</p>
+    <h1>Good to see you, {{ (settings.display_name if settings else 'there').split(' ')[0] }}</h1>
+    <p class="page-subtitle">Here's how your AI usage is trending across today, this week, and this month.</p>
+  </div>
+  <div class="page-header-actions">
+    <a href="{{ url_for('chat_page') }}" class="btn btn-primary">
+      <svg viewBox="0 0 24 24" fill="none" width="16" height="16"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Open Prompt Playground
+    </a>
+  </div>
+</div>
+
+{% if error_message %}
+<div class="alert alert-warning">{{ error_message }}</div>
+{% endif %}
+
+{% if not ai_configured %}
+<div class="alert alert-warning">
+  <strong>AI features are disabled.</strong>&nbsp;Add a valid <code>OPENAI_API_KEY</code> to your <code>.env</code> file and restart the server to enable chat, playground, and streaming.
+</div>
+{% endif %}
+
+<!-- ============================= STAT CARDS ============================= -->
+<section class="stat-grid" aria-label="Key statistics">
+  <article class="stat-card" data-stat="today-requests">
+    <div class="stat-card-top">
+      <span class="stat-icon stat-icon-violet">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 4h16v12H7l-3 3V4Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      </span>
+      <span class="stat-trend up">+{{ summary.today.requests }}</span>
+    </div>
+    <strong class="stat-value">{{ summary.today.requests }}</strong>
+    <span class="stat-label">Requests today</span>
+  </article>
+
+  <article class="stat-card" data-stat="week-requests">
+    <div class="stat-card-top">
+      <span class="stat-icon stat-icon-teal">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+    </div>
+    <strong class="stat-value">{{ summary.week.requests }}</strong>
+    <span class="stat-label">Requests this week</span>
+  </article>
+
+  <article class="stat-card" data-stat="month-tokens">
+    <div class="stat-card-top">
+      <span class="stat-icon stat-icon-amber">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+    </div>
+    <strong class="stat-value">{{ "{:,}".format(summary.month.tokens) }}</strong>
+    <span class="stat-label">Tokens used this month</span>
+  </article>
+
+  <article class="stat-card" data-stat="month-cost">
+    <div class="stat-card-top">
+      <span class="stat-icon stat-icon-rose">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2v20M17 6.5c0-1.9-2.2-3-5-3s-5 1.3-5 3 2.2 2.7 5 3 5 1.1 5 3-2.2 3-5 3-5-1.1-5-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+    </div>
+    <strong class="stat-value">{{ currency_symbol }}{{ "%.4f"|format(summary.month.cost) }}</strong>
+    <span class="stat-label">Estimated cost this month</span>
+  </article>
+</section>
+
+<!-- ============================= CHARTS ============================= -->
+<section id="analytics" class="chart-grid">
+  <article class="panel panel-large">
+    <div class="panel-header">
+      <div>
+        <h2>Requests over time</h2>
+        <p class="panel-subtitle">Last 14 days</p>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartRequests"></canvas></div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Prompt categories</h2>
+        <p class="panel-subtitle">All-time distribution</p>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartCategories"></canvas></div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Token usage</h2>
+        <p class="panel-subtitle">Prompt vs. completion tokens</p>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartTokens"></canvas></div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Estimated API cost</h2>
+        <p class="panel-subtitle">Daily spend, last 14 days</p>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartCosts"></canvas></div>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Average response time</h2>
+        <p class="panel-subtitle">Milliseconds per request</p>
+      </div>
+    </div>
+    <div class="chart-canvas-wrap"><canvas id="chartResponseTimes"></canvas></div>
+  </article>
+</section>
+
+<!-- ============================= ACTIVITY + MOST USED ============================= -->
+<section id="activity" class="split-grid">
+  <article class="panel panel-large">
+    <div class="panel-header">
+      <div>
+        <h2>Activity timeline</h2>
+        <p class="panel-subtitle">Your most recent AI requests</p>
+      </div>
+    </div>
+    <ul class="timeline" id="activityTimeline">
+      {% for item in activity %}
+      <li class="timeline-item">
+        <span class="timeline-dot {{ 'timeline-dot-error' if not item.success else '' }}"></span>
+        <div class="timeline-body">
+          <p class="timeline-title">
+            <strong>{{ item.category|capitalize }}</strong> request via <code>{{ item.model }}</code>
+          </p>
+          <p class="timeline-meta">
+            {{ item.total_tokens }} tokens · {{ item.response_time_ms }} ms · {{ currency_symbol }}{{ "%.5f"|format(item.estimated_cost) }}
+          </p>
+          {% if item.prompt_preview %}<p class="timeline-preview">&ldquo;{{ item.prompt_preview }}&rdquo;</p>{% endif %}
+        </div>
+        <time class="timeline-time">{{ item.timestamp[11:16] }}</time>
+      </li>
+      {% else %}
+      <li class="timeline-empty">No activity yet. Start a conversation in the AI Chat &amp; Playground.</li>
+      {% endfor %}
+    </ul>
+  </article>
+
+  <article class="panel">
+    <div class="panel-header">
+      <div>
+        <h2>Most used prompts</h2>
+        <p class="panel-subtitle">By frequency</p>
+      </div>
+    </div>
+    <ol class="ranked-list" id="mostUsedPrompts">
+      <li class="ranked-empty">Loading…</li>
+    </ol>
+  </article>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
