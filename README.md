@@ -65,29 +65,29 @@ A production-ready, self-hosted **AI analytics admin dashboard** built with Flas
 The project follows a **clean, modular, service-oriented architecture** so the codebase stays easy to test, extend, and reason about:
 
 ```
-┌──────────────────────┐
+┌─────────────────────┐
 │   templates/*.html   │  Presentation layer (Jinja2 + vanilla JS + Chart.js)
 └──────────┬───────────┘
            │
 ┌──────────▼───────────┐
-│       app.py         │  HTTP layer - Flask routes only (thin controllers)
+│       app.py          │  HTTP layer - Flask routes only (thin controllers)
 └──────────┬───────────┘
            │
-   ┌───────┼──────────────────┐
-   │       │                  │
-┌──▼────┐ ┌▼──────────────┐ ┌─▼───────────────┐
+   ┌───────┼────────────────┐
+   │       │                │
+┌──▼───┐ ┌─▼────────────┐ ┌─▼───────────────┐
 │ai_    │ │dashboard_     │ │analytics.py     │  Domain / service layer
 │service│ │service.py     │ │                 │  (business logic, no Flask
 │.py    │ │(prompts,      │ │(usage tracking, │   imports)
 │(OpenAI│ │ notifications,│ │ aggregation,    │
-│wrapper│ │ settings)     │ │ cost estimation)│
+│wrapper│ │ settings)      │ │ cost estimation)│
 └──┬────┘ └───────┬───────┘ └────────┬────────┘
    │              │                  │
    │      ┌───────▼──────────────────▼───────┐
-   │      │        data/*.json (JSON store)  │
-   │      └──────────────────────────────────┘
+   │      │        data/*.json (JSON store)    │
+   │      └────────────────────────────────────┘
    │
-┌──▼──────────────┐
+┌──▼─────────────┐
 │  OpenAI         │
 │  Responses API  │
 └─────────────────┘
@@ -135,7 +135,7 @@ ai-dashboard/
     │   ├── charts.js # Chart.js configuration & data loaders
     │   ├── chat.js # Floating AI chat widget
     │   └── theme.js # Theme toggle, sidebar, notifications dropdown
-    └── images/# Static image assets
+    └── images/ # Static image assets
 ```
 
 ---
@@ -205,8 +205,8 @@ python3 --version
 6. **Create your `.env` file**
 
    ```bash
-   cp .env.example .env        # macOS/Linux
-   copy .env.example .env      # Windows
+   cp .env.example .env # macOS/Linux
+   copy .env.example .env # Windows
    ```
 
    Open `.env` in VS Code and set your key:
@@ -293,7 +293,7 @@ Every page shares a **sidebar** (navigation + live monthly-spend widget), a **to
 ### Prompt Playground
 Single-shot prompt testing separate from multi-turn chat. Supports:
 - **Model selection** - choose from any model in the pricing table (`config.py`)
-- **Temperature control** - 0.0–2.0 slider, shared with the Chat tab
+- **Temperature control** - 0.0-2.0 slider, shared with the Chat tab
 - **System prompt editor** - persisted per-session, seeded from your Settings default
 - **Structured JSON output** - toggle "Request structured JSON output" to force `response_format: json_object`
 - **Output viewer** - switch between **Markdown** (rendered via marked.js), **JSON** (pretty-printed), and **Raw** text
